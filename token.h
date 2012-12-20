@@ -42,13 +42,13 @@ class token {
 		t_type get_type() { return type; }
 };
 
-template <class type_v>
+template <class v_type>
 class token_v: public token 
 {
 private:
-	type_v value;
+	v_type value;
 public:
-	token_v(type_v v, t_type t, std::string lex, int l, int c): token(t, lex, l, c), value(v) {}
+	token_v(v_type v, t_type t, std::string lex, int l, int c): token(t, lex, l, c), value(v) {}
 	virtual void display()
 		{
 			cout << "value:";
@@ -60,5 +60,6 @@ public:
 			cout << lexeme << " ("  << line << "," << column <<") " << endl;
 			return ;
 		}
+	v_type get_value() { return value; }
 };
 #endif

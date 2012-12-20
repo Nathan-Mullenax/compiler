@@ -129,7 +129,7 @@ token* scanner::read_char()
 		v = *forward;
 		read();
 	}
-	if (*forward!='\'') error("missing \"'\" ");
+	if (*forward!='\'') error("missing ''' ");
 	read();
 	return new token_v <int>(v, type,  lexeme, begin_line, begin_column);
 }
