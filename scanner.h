@@ -15,36 +15,37 @@ static const int BUFFER_SIZE = 10;
 class scanner
 {
 	private:
-		std::map <char, std::string> escape_sequences;
-		std::set <std::string> ops;
-		std::set <std::string> keywords;
+		std::map <char, char> escape_sequences;
+		std::map <std::string, t_type> ops;
+		std::map <std::string, t_type> keywords;
 
 		std::ifstream &input;
-		std::string lexem,type;
-		unsigned char buffer[BUFFER_SIZE*2],*half_buf,*begining,*forward;
-		int line,column,eof;
-		token current;
+		std::string lexeme;
+		t_type type;
+		char buffer[BUFFER_SIZE*2],*second_buf,*begining,*forward;
+		int line,column,eof,begin_line,begin_column;
 		bool iseof;
 
-		void read_single_type(int (*func)(int));
-		void move_forward();
-		void read_forward();
-		void back_forward();
-		void read_exp();
-		void read_space();
-		void read_ident();
-		void read_num();
-		bool read_comment();
-		void read_nonprod();
-		void read_char();
-		void read_string();	
-		void read_ops();
+		inline token *set_token();	
+		void move();
+		void read();
+		char look_next();
 		
+		void skip_nonprod();
+		bool skip_comment();
+		void read_single_type(int (*type)(int));
+
+		token* read_ident();
+		token* read_num();
+		token* read_float();
+		token* read_char();
+		token* read_string();	
+		token* read_ops();
 
 	public:
 		scanner(std::ifstream &in);
-		token get_token();
-
+		token *get_token();
+		inline void error(std::string msg,std::string type);
 };
 
 #endif

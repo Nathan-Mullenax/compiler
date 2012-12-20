@@ -1,218 +1,236 @@
-
 #include "scanner.h"
 
+static int isoct(int oct){ return oct >= '0' && oct <= '7'; }
+static int isidentsym(int sym){ return isalnum((unsigned char)sym) || sym == '_'; };
 
-int islatter(int latter){	return (isalnum(latter) || latter=='_');}
-int isoct(int oct){	return ((char)oct>='0' && (char)oct<='7');}
+inline void scanner::error(std::string msg, std::string type="error:") { throw excep(type+msg, column, line); }
+inline token* scanner::set_token() {return new token (type,  lexeme, begin_line, begin_column);}
 
-void scanner::move_forward()
+void scanner::move()
 {
-	if (iseof)											return;
+	if (iseof) return;
 	switch (*forward)
 		{
-			case ' ':	column++;						break;
-			case '\n':	line++,column=1;				break;
-			case '\t':	column=1+(column-1)/4*4;		break;
-			default	:	column++;						break;
+			case ' ' :	column++; break;
+			case '\n' :	line++, column = 1; break;
+			case '\t' :	column = 1 + (column-1)/4*4; break;
+			default	:	column++; break;
 		}
-	if ( ++forward == buffer+BUFFER_SIZE*2 )
+	if (++forward-buffer == BUFFER_SIZE * 2)
 	{
-		char *temp=(char *)buffer;
-		std::strncpy(temp,(char *)half_buf,BUFFER_SIZE);
-		input.read((char *)half_buf, BUFFER_SIZE);
-		if(input.gcount()!=BUFFER_SIZE)
+		std::strncpy(buffer,second_buf, BUFFER_SIZE);
+		input.read(second_buf, BUFFER_SIZE);
+		if (input.gcount() != BUFFER_SIZE)
 		{
-			half_buf[input.gcount()]=EOF;
-			eof=input.gcount();
+			second_buf[input.gcount()] = EOF;
+			eof = input.gcount();
 		}
-		forward=half_buf,	begining-=BUFFER_SIZE;
+		forward = second_buf,	begining -= BUFFER_SIZE;
 	}
-	if (!iseof)	iseof=(forward-half_buf)>=eof;
+	if (!iseof)	iseof = (forward - second_buf) >= eof;
 }
 
-
-
-void scanner::back_forward()
+char scanner::look_next()
 {
-	current.lexem="";
-	forward=begining;
-	line=current.line;
-	column=current.column;
-	iseof=forward-half_buf>=eof;
+	int l=line, c=column;
+	move();
+	char next = *forward;
+	forward--, line=l, column=c;
+	return next;
 }
 
-void scanner::read_forward()	{current.lexem+=*forward; move_forward();}
+void scanner::read() {lexeme += *forward; move();}
 
-
-void scanner::read_single_type(int (*func)(int))
+void scanner::read_single_type(int (*istype)(int))
 {
-	do	read_forward();
-	while(func(*forward));	
+	do	read();
+	while(istype((unsigned char)*forward));	
 }
 
-bool scanner::read_comment()
+token* scanner::read_ident()
 {
+	read_single_type(isidentsym);
+	if (keywords.find(lexeme) != keywords.end()) { type = keywords[lexeme]; }
+	else { type = IDENTIFIER; }
+	return set_token();
+}
 
-	begining=forward;
-	current.line=line, current.column=column;
-	move_forward();
-	bool flag=false;
-	if (*begining =='/' && *forward=='*' )	
+token* scanner::read_num()
+{
+	type = INT;
+	int v;
+	if (*forward == '0')
 	{
-		
-		flag=true;
-		do
-		{
-			if (iseof)				throw excep("EOF in comment",column,line);
-			move_forward();
-		}while (*forward!='/' || *(forward-1)!='*');
-		move_forward();
-	}
-
-	else if (*forward=='/' && *begining =='/' )	
-	{
-		flag=true;
-		do
-		{
-			if (iseof)	return true;
-			move_forward();
-		}while (*forward!='\n');
-		move_forward();
-	}
-	else back_forward();
-	return flag;
-}
-
-void scanner::read_ident(){
-		read_single_type(islatter);
-		if (keywords.find(current.lexem)!=keywords.end()) current.type=current.lexem;
-		else current.type="IDENTIFIER";
-	}
-void scanner::read_exp()
-{
-	if(*forward=='+' || *forward=='-') { read_forward();}
-	if(isdigit(*forward))	while(isdigit(*forward))	{read_forward();}
-	else throw excep("const",column,line);
-}
-void scanner::read_num()
-{
-	if (*forward=='0')
-	{
-		read_forward();
-		if (*forward=='x') 
+		read();
+		if (*forward == 'x') 
 		{ 
-			read_forward();
-			if (!isxdigit(*forward))								throw excep("const number",column,line);
-			current.type="HEX_LITERAL";
+			read();
+			if (!isxdigit((unsigned char)*forward)) error("need at least one hex digit");
 			read_single_type(isxdigit);						
-			if (!isspace(*forward) && !ispunct(*forward) && !iseof)	throw excep("const number",column,line);
-			return;
+			if (!isspace((unsigned char)*forward) && !ispunct((unsigned char)*forward) && !iseof)	error("invalid number");
+			sscanf_s(lexeme.c_str(), "%x", &v);
+			return new token_v <int> (v, type,  lexeme, begin_line, begin_column);
 		}
-		else if (isoct(*forward))
+		if (isoct(*forward))
 		{ 
 			read_single_type(isoct);
-			current.type="OCT_LITERAL";
-			if (!isspace(*forward) && !ispunct(*forward) && !iseof)	throw excep("const number",column,line); 
-			return;
+			sscanf_s(lexeme.c_str(), "%o", &v);
+			if (!isspace((unsigned char)*forward) && !ispunct((unsigned char)*forward) && !iseof)	error("invalid number"); 
+			return new token_v <int> (v, type,  lexeme, begin_line, begin_column);
 		}
 	}
-	else if (isdigit(*forward)){ read_single_type(isdigit); current.type="DEC_LITERAL";}
-
-	if (*forward=='.')	{;read_single_type(isdigit); current.type="FLOAT";}
-	if (*forward=='e' || *forward=='E') {read_forward(); read_exp(); current.type="FLOAT";}
-	if (!isspace(*forward) && !ispunct(*forward) && !iseof)			throw excep("const number",column,line);
-		
+	
+	else if (isdigit((unsigned char)*forward)) read_single_type(isdigit);
+	sscanf_s(lexeme.c_str(), "%d", &v);
+	if (*forward == '.' || *forward == 'e' || *forward == 'E') return read_float();
+	if (!isspace((unsigned char)*forward) && !ispunct((unsigned char)*forward) && !iseof) error("invalid number");
+	return new token_v <int> (v, type,  lexeme, begin_line, begin_column);
 }
 
-void scanner::read_char()
+token *scanner::read_float()
 {
-	current.type="CHAR";
-	read_forward();
-	if (*forward=='\\')
+	type = FLOAT;
+	float v;
+	if (*forward == '.')	
 	{
-		read_forward();
-		if(escape_sequences.find(*forward)==escape_sequences.end())		throw excep("unknown escape sequence",column,line);
-		read_forward();					
+		read();
+		if (isdigit((unsigned char)*forward)) 
+			read_single_type(isdigit);
+	}
+	if (*forward == 'e' || *forward == 'E')
+	{ 
+		read();
+		if (*forward == '+' || *forward == '-')  read();
+		if (isxdigit((unsigned char)*forward))	read_single_type(isxdigit);
+		else error("need at least one digit after e");
+	}
+	sscanf_s(lexeme.c_str(), "%f", &v);
+	if (!isspace((unsigned char)*forward) && !ispunct((unsigned char)*forward) && !iseof) error("invalid number");
+	return new token_v <float> (v, type,  lexeme, begin_line, begin_column);
+}
+
+token* scanner::read_char()
+{
+	int v;
+	type=CHAR;
+	read();
+	if (*forward == '\\')
+	{
+		read();
+		if(escape_sequences.find(*forward) == escape_sequences.end()) error("unknown escape sequence");
+		v = escape_sequences[*forward];
+		read();					
 	}
 	else
 	{
-		if (*forward=='\'')		throw excep("empty char const",column,line);
-		if (*forward=='\n')		throw excep("newline in const char",column,line);
-		if (iseof)				throw excep("EOF in const char",column,line);
-		read_forward();
+		if (*forward == '\'')	error("empty char const");
+		if (*forward == '\n')	error("newline in const char");
+		if (iseof) error("EOF in const char");
+		v = *forward;
+		read();
 	}
-	if (*forward!='\'')			throw excep("missing \"'\" ",column,line);
-	read_forward();
+	if (*forward!='\'') error("missing \"'\" ");
+	read();
+	return new token_v <int>(v, type,  lexeme, begin_line, begin_column);
 }
 
 
-void scanner::read_string()
+token* scanner::read_string()
 {
-	current.type="STRING";
-	read_forward();
+	std::string v;
+	type = STRING;
+	read();
 	while (*forward!='"')
 	{
-		if (iseof)				throw excep("EOF in string",column,line);
-		if (*forward=='\n')		throw excep("newline in string",column,line);
-		if (*forward=='\\')
+		if (iseof) error("EOF in string");
+		if (*forward == '\n') error("newline in string");
+		if (*forward == '\\')
 		{
-			read_forward();
+			read();
 			if (escape_sequences.find(*forward) == escape_sequences.end())
-								throw excep("unknow escape_sequences in string",column,line);
-			read_forward();
+				error("unknow escape_sequences in string");
+			v += escape_sequences[*forward];
+			read();
 		} 
-		else read_forward();
+		else { v += *forward; read(); }
 	}
-	read_forward();
-
+	read();
+	return new token_v<std::string>(v, type,  lexeme, begin_line, begin_column);
 }
 
-void scanner::read_ops()
+token* scanner::read_ops()
 {
-	do
-		read_forward();
-	while(ops.find(current.lexem+*(char *)forward)!=ops.end());
-	current.type=current.lexem;
+	do read();
+	while (ops.find(lexeme+*(char *)forward)!=ops.end());
+	type = ops[lexeme];
+	return set_token();
 }
 
-void scanner::read_nonprod()
+void scanner::skip_nonprod()
 {
-	while (isspace(*forward)) move_forward();
-	bool comment_reading;
-	do
+	while (isspace((unsigned char)*forward)) move();
+	while (skip_comment())
+		while (isspace((unsigned char)*forward)) move();
+}
+
+bool scanner::skip_comment()
+{
+	begining=forward;
+	begin_line=line, begin_column=column;
+	if (  *forward ==  '/' && look_next() == '*')	
 	{
-		comment_reading=read_comment();
-		while (isspace(*forward)) move_forward();
-	}while ( comment_reading );
+		move(); move();
+		do
+		{
+			if (iseof) error("EOF in comment");
+			move();
+		} while (*forward != '*' || look_next() != '/');
+		move(); move();
+		return true;
+	}
+	else if (*forward == '/' && look_next() == '/' )	
+	{
+		do
+		{
+			if (iseof)	return true;
+			move();
+		} while (*forward != '\n');
+		move();
+		return true;
+	}
+	else return false;
 }
 
-token scanner::get_token()
+token* scanner::get_token()
 {
-	read_nonprod();
-	current.line=line,	current.column=column,	begining=forward;
+	skip_nonprod();
+	begin_line = line,	begin_column = column,	begining = forward, lexeme = "";
 
-	if (iseof)															{current.type="EOF";return current;}
-	if (isalpha(*forward) || *forward=='_')								{read_ident();return current;}
-	if (isdigit(*forward))												{read_num();return current;}
-	if (*forward=='.' && isdigit((move_forward(),*forward)) )			{back_forward(); read_num();return current;}  
-	back_forward();
-	if (*forward=='\'')													{read_char();return current;}	
-	if (*forward=='"')													{read_string();return current;}
-	std::string a;a+=*forward; if (ops.find(a)!=ops.end())				{read_ops();return current;}
-
-	throw excep("unexpected symbol",column,line);
+	if (iseof) return new token(EOF_TYPE, lexeme, begin_line, begin_column);
+	if (isalpha( (unsigned char)*forward) || *forward == '_')	return read_ident();	
+	if (isdigit( (unsigned char)*forward) || *forward == '.' && isdigit((unsigned char)look_next()) )	return read_num();
+	if (*forward == '\'') return read_char();	
+	if (*forward == '"') return read_string();				
+	std::string a;a+=*forward; if (ops.find(a)!=ops.end()) return read_ops();				
+	error("unexpected symbol");
 }
+
+
 
 scanner::scanner(std::ifstream &in):
-input(in), forward(buffer + BUFFER_SIZE),line(1), column(1), half_buf(buffer + BUFFER_SIZE), eof(BUFFER_SIZE+1), iseof(false)
+input(in), forward(buffer + BUFFER_SIZE),line(1), column(1), 
+second_buf(buffer + BUFFER_SIZE),eof(BUFFER_SIZE+1), iseof(false)
 
 {
-	input.read((char *)half_buf, BUFFER_SIZE);
+
+	input.read((char *)second_buf, BUFFER_SIZE);
 		if(input.gcount()!=BUFFER_SIZE)
 	{
-		half_buf[input.gcount()]=EOF;
+		second_buf[input.gcount()]=EOF;
 		eof=input.gcount();
 	}
-#include "reserved_word.h"
 
+#define RESERVED_EXPR
+#include "token_type.h"
+#undef RESERVED_EXPR
 }

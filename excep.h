@@ -10,8 +10,14 @@ class excep
 		std::string massage;
 		int line,column;
 	public:
-		void display();
-		excep(std::string mas, int col, int l);
+		excep(std::string mas, int col, int l): column(col), line(l), massage(mas) {}
+		void display()
+		{
+			std::cout << massage << " at line:" << line << " column:" <<  column << std::endl;
+			return;
+		}
+
+
 };
 
 #endif

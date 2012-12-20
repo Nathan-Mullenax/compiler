@@ -1,7 +1,6 @@
 #include "token.h"
 
 
-token::token() {}
 
 void token::display()
 {

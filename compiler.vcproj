@@ -175,15 +175,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\excep.cpp"
+				RelativePath=".\parser.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\scanner.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\token.cpp"
 				>
 			</File>
 		</Filter>
@@ -197,7 +193,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\reserved_word.h"
+				RelativePath=".\parser.h"
 				>
 			</File>
 			<File
@@ -205,7 +201,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\symbol.h"
+				>
+			</File>
+			<File
 				RelativePath=".\token.h"
+				>
+			</File>
+			<File
+				RelativePath=".\token_type.h"
 				>
 			</File>
 		</Filter>
