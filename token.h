@@ -11,12 +11,7 @@ enum t_type
 #undef TOKEN
 };
 
-
-static const char *t_str[] = {
-#define TOKEN(name) #name
-#include "token_type.h"
-#undef TOKEN
-};
+extern const char *type_str[];
 
 using namespace std;
 
@@ -32,7 +27,7 @@ class token {
 			cout.width(16);cout.setf(ios:: left);
 			cout << "" << "type:";
 			cout.width(15);cout.setf(ios:: left);
-			cout << t_str[type] << " lexeme:";
+			cout << type_str[type] << " lexeme:";
 			cout.width(10);cout.setf(ios:: left );
 			cout << lexeme << " ("  << line << "," << column <<") " << endl;
 			return ;
@@ -40,6 +35,8 @@ class token {
 		token(t_type t, std::string lex, int l, int c): type(t), lexeme(lex), line(l), column(c) {}
 		std::string get_lexeme()		{return lexeme;} 
 		t_type get_type() { return type; }
+		int get_line() { return line; }
+		int get_column() { return column; }
 };
 
 template <class v_type>
@@ -55,11 +52,12 @@ public:
 			cout.width(10);cout.setf(ios:: left);
 			cout << value << "type:";
 			cout.width(15);cout.setf(ios:: left);
-			cout << t_str[type] << " lexeme:";
+			cout << type_str[type] << " lexeme:";
 			cout.width(10);cout.setf(ios:: left );
 			cout << lexeme << " ("  << line << "," << column <<") " << endl;
 			return ;
 		}
 	v_type get_value() { return value; }
+
 };
 #endif

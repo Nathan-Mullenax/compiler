@@ -16,8 +16,6 @@ class excep
 			std::cout << massage << " at line:" << line << " column:" <<  column << std::endl;
 			return;
 		}
-
-
 };
 
 #endif

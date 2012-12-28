@@ -26,6 +26,7 @@ class scanner
 		int line,column,eof,begin_line,begin_column;
 		bool iseof;
 
+		inline void error(std::string msg);
 		inline token *set_token();	
 		void move();
 		void read();
@@ -45,7 +46,7 @@ class scanner
 	public:
 		scanner(std::ifstream &in);
 		token *get_token();
-		inline void error(std::string msg,std::string type);
+
 };
 
 #endif

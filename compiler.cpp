@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -37,3 +36,40 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+
+
+
+
+
+
+
+
+
+//
+//
+//
+//#include <iostream>
+//#include <fstream>
+//#include <string>
+//#include <vector>
+//#include "parser.h"
+//#include <stdio.h>
+//
+//using namespace std;
+//
+//int main(int argc, char* argv[])
+//{ 
+//	int a=isdigit(('я'));									// istype не работает с signed char!
+//	ifstream input( "c:/compiler/Debug/syn_tests/31.txt");
+//	try{
+//		scanner scan(input);
+//	//		token *current;
+//	//		while (current=scan.get_token(),current->get_type()!=EOF_TYPE) current->display();
+//	parser pars(&scan);
+//	pars.output();
+//		}
+//
+//	catch(excep error) {error.display();}
+//return 0;
+//}
+//

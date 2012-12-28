@@ -1,9 +1,15 @@
 #include "scanner.h"
 
+const char *type_str[] = {
+#define TOKEN(name) #name
+#include "token_type.h"
+#undef TOKEN
+};
+
 static int isoct(int oct){ return oct >= '0' && oct <= '7'; }
 static int isidentsym(int sym){ return isalnum((unsigned char)sym) || sym == '_'; };
 
-inline void scanner::error(std::string msg, std::string type="error:") { throw excep(type+msg, column, line); }
+inline void scanner::error(std::string msg) { throw excep(msg, column, line); }
 inline token* scanner::set_token() {return new token (type,  lexeme, begin_line, begin_column);}
 
 void scanner::move()
@@ -57,7 +63,7 @@ token* scanner::read_ident()
 
 token* scanner::read_num()
 {
-	type = INT;
+	type = INT_CONST;
 	int v;
 	if (*forward == '0')
 	{
@@ -89,7 +95,7 @@ token* scanner::read_num()
 
 token *scanner::read_float()
 {
-	type = FLOAT;
+	type = FLOAT_CONST;
 	float v;
 	if (*forward == '.')	
 	{
@@ -112,7 +118,7 @@ token *scanner::read_float()
 token* scanner::read_char()
 {
 	int v;
-	type=CHAR;
+	type=CHAR_CONST;
 	read();
 	if (*forward == '\\')
 	{

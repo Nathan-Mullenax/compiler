@@ -35,13 +35,16 @@
     <ClInclude Include="scanner.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="symbol.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="token.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="token_type.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="node.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="sym.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>
