@@ -1,7 +1,6 @@
 #ifndef SYM_H
 #define SYM_H
-
-using namespace std;
+#include <map>
 
 class sym
 {
@@ -10,6 +9,7 @@ protected:
 public:
 	sym(string n): name(n) {}
 	string get_name() { return name; }
+	virtual void output() { cout << name << " "; }
 };
 
 //------------------------------TABLE-------------------------------//
@@ -17,30 +17,50 @@ public:
 class symtable
 {
 private:
-	map<string, sym *> table;
-	symtable *prev;
+	map<string, sym *> var_table;
+	map<string, sym *> struct_table;
 public:
+	symtable *prev;
 	symtable(){};
-	void push(sym *new_sym)
+	void push_var(sym *new_sym)
 	{
-		table[new_sym->get_name()] = new_sym;
+		var_table[new_sym->get_name()] = new_sym;
+	}
+	void push_struct(sym *new_sym)
+	{
+		struct_table[new_sym->get_name()] = new_sym;
 	}
 	void prev_table(symtable *external)
 	{
 		prev = external;
 	}
-	sym *operator [](string ident)
+	sym *check_var(string ident)
 	{
-		if (table[ident]) 	return table[ident];
+		if (var_table[ident]) 	return var_table[ident];
 		else return 0;
+	}
+	sym *check_struct(string ident)
+	{
+		if (struct_table[ident]) 	return struct_table[ident];
+		else return 0;
+	}
+	void output()
+	{
+		map<string, sym *>::iterator i;
+		for (i = var_table.begin(); i != var_table.end(); i++)
+			 i->second->output();
+		for (i = struct_table.begin(); i != struct_table.end(); i++)
+			 i->second->output();
 	}
 };
 
 
 //---------------------------------TYPE--------------------------------//
+enum type {BASE, FUNC, ARRAY, STRUCTURE, POINTER};
 class sym_type: public sym
 {
 public:
+	virtual type get_type() {return BASE;}
 	sym_type(string n): sym(n) {}
 };
 //------------------BASE--------------//
@@ -72,7 +92,8 @@ class type_struct: public sym_type
 {
 	symtable *cons;
 public:
-	type_struct(string name, symtable *consist): sym_type("struct" + name), cons(consist) {}
+	type get_type(){return STRUCTURE;}
+	type_struct(string name, symtable *consist): sym_type("struct_" + name), cons(consist) {}
 	type_struct(symtable *consist): sym_type("struct"), cons(consist) {}
 };
 //-------------------DERIVATIVE--------------------//
@@ -87,9 +108,11 @@ public:
 	{
 		base_type = base;
 	}
-	void get_base_type(sym_type *base)
+
+	void output()
 	{
-		base_type = base;
+		sym::output();
+		base_type->output();
 	}
 };
 
@@ -98,6 +121,7 @@ class type_array: public derivative_type
 private:
 	expr *_size;
 public:
+	type get_type(){return ARRAY;}
 	type_array(): derivative_type("array") {}
 	type_array(expr *size): derivative_type("array"), _size(size) {}
 };
@@ -106,6 +130,7 @@ class type_pointer: public derivative_type
 {
 
 public:
+	type get_type(){return POINTER;}
 	type_pointer(): derivative_type("pointer") {}
 
 };
@@ -113,11 +138,13 @@ public:
 class type_func: public derivative_type
 {
 	symtable *arg;
-
+	symtable *local;
+	compound_stmt *func_statements;
 public:
 	type_func(): derivative_type("func") {}
 	type_func(symtable *arguments): derivative_type("func"), arg(arguments) {}
-
+	type get_type() {return FUNC;}
+	void def(compound_stmt *statements, symtable *local_var) { func_statements = statements; local = local_var; }
 };
 //-------------------------------VARAIBLE----------------------------------//
 
@@ -127,6 +154,15 @@ private:
 	sym_type *type_var;
 public:
 	sym_var(sym_type *type, string n): sym(n), type_var(type) {}
+	void output()
+	{
+		type_var->output();
+		cout << name << endl;
+	}
+	type get_type()
+	{
+		return type_var->get_type();
+	}
 };
 
 class var_const: public sym_var

@@ -6,7 +6,6 @@
 #include "node.h"
 #include "sym.h"
 
-
 using namespace std;
 
 class parser
@@ -14,12 +13,14 @@ class parser
 	private:
 		token* lookahead;
 		scanner *scan;
-		token *get_token()		{ token *ret = lookahead; 
-		lookahead = scan->get_token(); return ret;}
-		inline void error(std::string msg) { throw excep(msg, lookahead->get_column(), lookahead->get_line()); }
 		node *root;
+		symtable *cur_table;
+
+		token *get_token() { token *ret = lookahead; lookahead = scan->get_token(); return ret; }
+		inline void error(string msg) { throw excep(msg, lookahead->get_column(), lookahead->get_line()); }
+
 		inline bool is_type(t_type t);
-		inline bool is_spec();
+		inline bool is_one_of_type(t_type fst, ...);
 
 		var *parse_var(); 
 		constant *parse_constant();
@@ -32,20 +33,22 @@ class parser
 		expr *parse_assign_expr(); 
 		expr *parse_expr(); 
 
-		symtable *cur_table;
+
 
 		expr_stmt *parse_expr_stmt();
 		stmt *parse_stmt();
 
-		void parse_decl();
-		sym_type *det_base_type();
+		void parse_global();
+		compound_stmt *parse_block();		
+		sym_type *det_spec_type();
 		sym_var *parse_single_spec(sym_type *base);
-		derivative_type *parse_declarator(derivative_type *head, string *a);
+		derivative_type *parse_declarator(derivative_type *&head, string &ident);
 		symtable *parse_consist();		
 		symtable *parse_arg();
+
 	public:
 		parser(scanner* sc);
-		void output ()			{root->output();}
+		void output () { cur_table->output(); }
 };
 
 #endif

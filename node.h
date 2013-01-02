@@ -2,7 +2,6 @@
 #define NODE_H
 
 #include <list>
-#include <string>
 
 using namespace std;
 
@@ -210,7 +209,7 @@ public:
 	}
 	for_stmt(expr_stmt *start,expr_stmt *cond, stmt *s   ): stmt("FOR")
 	{
-		children.push_back(s);
+		children.push_back(start);
 		children.push_back(cond); 
 		children.push_back(s); 
 	}
