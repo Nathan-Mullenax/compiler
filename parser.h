@@ -41,7 +41,7 @@ class parser
 		void parse_global();
 		compound_stmt *parse_block();		
 		sym_type *det_spec_type();
-		sym_var *parse_single_spec(sym_type *base);
+		sym_var *parse_single_spec(sym_type *base, bool *is_func_def = 0);
 		derivative_type *parse_declarator(derivative_type *&head, string &ident);
 		symtable *parse_consist();		
 		symtable *parse_arg();

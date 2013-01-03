@@ -52,7 +52,7 @@ using namespace std;
 int main(int argc, char* argv[])
 { 
 	int a=isdigit(('я'));									// istype не работает с signed char!
-	ifstream input( "c:/compiler/Debug/sem_tests/33.txt");
+	ifstream input( "c:/compiler/Debug/sem_tests/58.txt");
 	try{
 		scanner scan(input);
 	//		token *current;
@@ -64,4 +64,3 @@ int main(int argc, char* argv[])
 	catch(excep error) {error.display();}
 return 0;
 }
-

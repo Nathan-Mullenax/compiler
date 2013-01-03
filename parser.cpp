@@ -120,7 +120,7 @@ expr *parser::parse_postfix_expr()
 expr *parser::parse_prefix_expr()
 {
 	token *temp=lookahead;
-	while(is_one_of_type(INC, DEC, SUB, ADD, BIT_AND, BIT_OR, STAR, XOR, DIV, SIZEOF, 0))
+	while(is_one_of_type(INC, DEC, SUB, ADD, NEGATION, TILDE, BIT_AND, XOR, DIV, SIZEOF, 0))
 	{
 		get_token();
 		if (is_one_of_type(L_PARENTH, 0));	//		cast_expr!sizeof! реализация отложена до сем. анализа
@@ -286,30 +286,39 @@ stmt *parser::parse_stmt()
 
 compound_stmt *parser::parse_block()
 {
+	symtable *new_table = new symtable();
+	new_table->prev = cur_table;
+	cur_table = new_table;
 	compound_stmt *block = 0;
 	sym_type *spec = 0;
-	block = new compound_stmt("statement");
+	block = new compound_stmt("statement", cur_table);
 	while(!is_type(R_BRACE))
 	{
 		spec = det_spec_type();
 		if (spec) 
+		{
 			do	cur_table->push_var(parse_single_spec(spec));
 			while(is_type(COMMA));
+			if (!is_type(SEMICOLON)) error("missing ';'");
+		}
 		else block->add(parse_stmt());
 	}
+	cur_table = cur_table->prev;
 	return block;
 }
 /*--------------------------------------------declaration----------------------------------------*/
 sym_type *parser::det_spec_type()
 {
-	switch (get_token()->get_type())
+	switch (lookahead->get_type())
 	{
-	case INT:		return new type_int();
-	case CHAR:		return new type_char();
-	case FLOAT:		return new type_float();
-	case VOID:		return new type_void();
-	case STRUCT:	if (!is_one_of_type(IDENTIFIER, 0)) return new type_struct(parse_consist());
-					else return new type_struct(get_token()->get_lexeme(), parse_consist());
+	case INT:		{ get_token(); return new type_int(); }
+	case CHAR:		{ get_token(); return new type_char(); }
+	case FLOAT:		{ get_token(); return new type_float(); }
+	case VOID:		{ get_token(); return new type_void(); }
+	case STRUCT:	{ get_token();
+						if (!is_one_of_type(IDENTIFIER, 0)) return new type_struct(parse_consist());
+						else return new type_struct(get_token()->get_lexeme(), parse_consist());
+					}
 	default: return 0;
 	}
 }
@@ -317,15 +326,18 @@ sym_type *parser::det_spec_type()
 
 void parser::parse_global()
 {
+	bool is_func_def = false;
 	sym_type *spec = det_spec_type();	
 	if (!spec) error("expected type");
-	sym_var *first = parse_single_spec(spec);
-	do	cur_table->push_var(parse_single_spec(spec));
-	while(is_type(COMMA));
+	sym_var *first = parse_single_spec(spec, &is_func_def);
+	cur_table->push_var(first);
+	if (is_func_def) return;
+	while(is_type(COMMA)) 
+		cur_table->push_var(parse_single_spec(spec));
 	if (!is_type(SEMICOLON)) error("missing ';'");
 }
 
-sym_var *parser::parse_single_spec(sym_type *spec)
+sym_var *parser::parse_single_spec(sym_type *spec, bool *is_func_def)
 {
 	derivative_type *head = 0, *last;
 	string ident;
@@ -334,8 +346,9 @@ sym_var *parser::parse_single_spec(sym_type *spec)
 	last->det_base_type(spec);
 	if (head->get_type() == FUNC && is_type(L_BRACE)) 
 	{
-		cur_table = cur_table->prev = new symtable();
-		dynamic_cast<type_func *>(head)->def(parse_block(), cur_table);
+		*is_func_def = true;
+		dynamic_cast<type_func *>(head)->def(parse_block());
+
 	}
 	return new sym_var(head, ident);
 }
@@ -353,9 +366,11 @@ derivative_type *parser::parse_declarator(derivative_type *&head, string &ident)
 	}
 	else if (is_one_of_type(IDENTIFIER, 0))
 		ident = get_token()->get_lexeme();
-	else error(lookahead->get_lexeme() + ", expected identifier");
+	else error("expected identifier");
 	if (is_type(L_PARENTH))
 	{
+		if (last && last->get_type() == FUNC) error ("function return function");
+		if (last && last->get_type() == ARRAY) error ("massive of function");
 		if (is_type(R_PARENTH))
 		{
 
@@ -376,6 +391,7 @@ derivative_type *parser::parse_declarator(derivative_type *&head, string &ident)
 	}
 	while (is_type(L_BRACKET))
 	{
+		if (last && last->get_type() == FUNC) error ("function return massive");
 		if (is_type(R_BRACKET))
 		{
 			temp = new type_array();
@@ -433,6 +449,14 @@ symtable *parser::parse_consist()   // сделать
 	return ret;
 }
 
+void compound_stmt::output(int depth)
+{
+	for (int i=0; i<depth; i++)
+		cout << '\t';
+	local_var->output();
+	cout << endl;
+	node::output(depth);
+}
 
 parser::parser(scanner *sc): scan(sc)
 {
@@ -440,4 +464,5 @@ parser::parser(scanner *sc): scan(sc)
 	cur_table = new symtable();
 	while (!is_one_of_type(EOF_TYPE, 0))
 		parse_global(); 
+	cout << endl;
 }

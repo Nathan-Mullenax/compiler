@@ -2,7 +2,6 @@
 #define NODE_H
 
 #include <list>
-
 using namespace std;
 
 class node
@@ -13,7 +12,7 @@ protected:
 	list <node*> children;
 public:
 	node(string n): name(n) {}
-	void output(int depth=0)
+	virtual void output(int depth = 0)
 	{
 		for (int i=0; i<depth; i++)
 			cout << '\t';
@@ -128,14 +127,18 @@ public:
 	stmt(string n): node(n){}
 };
 
+class symtable;
 class compound_stmt : public stmt
 {
+private:
+	symtable *local_var;
 public:
-	compound_stmt(string n): stmt("list_" + n) {}
+	compound_stmt(string n, symtable *local): stmt("list_" + n), local_var(local) {}
 	void add(node * child)
 	{
 		children.push_back(child);
 	}
+	void output(int depth = 0);
 };
 
 class expr_stmt : public stmt

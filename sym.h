@@ -46,11 +46,20 @@ public:
 	}
 	void output()
 	{
-		map<string, sym *>::iterator i;
-		for (i = var_table.begin(); i != var_table.end(); i++)
+		map<string, sym *>::iterator i = var_table.begin();
+		while (i != var_table.end())
+		{
 			 i->second->output();
-		for (i = struct_table.begin(); i != struct_table.end(); i++)
+			 if (++i == var_table.end()) break;
+			 cout << ", ";
+		}
+		i = struct_table.begin();
+		while (i != struct_table.end())
+		{
 			 i->second->output();
+			 if (++i == struct_table.end()) break;
+			 cout << ", ";
+		}
 	}
 };
 
@@ -138,13 +147,19 @@ public:
 class type_func: public derivative_type
 {
 	symtable *arg;
-	symtable *local;
-	compound_stmt *func_statements;
+	compound_stmt *definition;
 public:
-	type_func(): derivative_type("func") {}
-	type_func(symtable *arguments): derivative_type("func"), arg(arguments) {}
+	type_func(): derivative_type("func"), definition(0) {}
+	type_func(symtable *arguments): derivative_type("func"), arg(arguments), definition(0) {}
 	type get_type() {return FUNC;}
-	void def(compound_stmt *statements, symtable *local_var) { func_statements = statements; local = local_var; }
+	void def(compound_stmt *d) { definition = d; }
+	void output()
+	{
+		base_type->output();
+		sym::output();
+		cout << '('; arg->output(); cout << ')';
+		if (definition) definition->output();
+	}
 };
 //-------------------------------VARAIBLE----------------------------------//
 
@@ -157,7 +172,7 @@ public:
 	void output()
 	{
 		type_var->output();
-		cout << name << endl;
+		cout << name;
 	}
 	type get_type()
 	{
