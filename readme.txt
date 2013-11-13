@@ -1,1 +1,1 @@
-﻿copiler by KimAnton
+﻿compiler by KimAnton

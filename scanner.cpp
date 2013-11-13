@@ -19,7 +19,7 @@ void scanner::move()
 		{
 			case ' ' :	column++; break;
 			case '\n' :	line++, column = 1; break;
-			case '\t' :	column = 1 + (column-1)/4*4; break;
+			case '\t' :	column = 1 + ((column - 1) / 4 + 1) * 4; break;
 			default	:	column++; break;
 		}
 	if (++forward-buffer == BUFFER_SIZE * 2)
@@ -137,7 +137,7 @@ token* scanner::read_char()
 	}
 	if (*forward!='\'') error("missing ''' ");
 	read();
-	return new token_v <int>(v, type,  lexeme, begin_line, begin_column);
+	return new token_v <char>(v, type,  lexeme, begin_line, begin_column);
 }
 
 

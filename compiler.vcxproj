@@ -89,12 +89,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="asm_cmd.cpp" />
     <ClCompile Include="compiler.cpp" />
+    <ClCompile Include="generator.cpp" />
+    <ClCompile Include="node.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="scanner.cpp" />
+    <ClCompile Include="sym.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="asm_cmd.h" />
+    <ClInclude Include="asm_label.h" />
     <ClInclude Include="excep.h" />
+    <ClInclude Include="generator.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="scanner.h" />
     <ClInclude Include="node.h" />
